@@ -1,4 +1,4 @@
-package com.example.notesapp.room
+package com.example.notesapp.data.room
 
 import com.example.notesapp.domain.Note
 import com.example.notesapp.presentation.NoteUI

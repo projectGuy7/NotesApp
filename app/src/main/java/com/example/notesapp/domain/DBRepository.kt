@@ -2,9 +2,9 @@ package com.example.notesapp.domain
 
 import android.content.Context
 import com.example.notesapp.presentation.util.RequestResult
-import com.example.notesapp.room.DatabaseProvider
-import com.example.notesapp.room.NoteEntity
-import com.example.notesapp.room.toNote
+import com.example.notesapp.data.room.DatabaseProvider
+import com.example.notesapp.data.room.NoteEntity
+import com.example.notesapp.data.room.toNote
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.format.DateTimeParseException

@@ -1,6 +1,5 @@
-package com.example.notesapp.room
+package com.example.notesapp.data.room
 
-import androidx.room3.ColumnTypeConverters
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
 

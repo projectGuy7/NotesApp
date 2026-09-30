@@ -2,6 +2,7 @@ package com.example.notesapp.presentation
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -38,8 +39,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.notesapp.domain.DBRepository
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
 
+const val VIEW_NOTE_ANALYTICS = "view_note"
 class MainActivity : ComponentActivity() {
+    lateinit var analytics: FirebaseAnalytics
     private val viewModel: MainViewModel by viewModels {
         viewModelFactory {
             initializer {
@@ -51,11 +57,15 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        analytics = Firebase.analytics
         enableEdgeToEdge()
         setContent {
+            val state by viewModel.notesListState.collectAsStateWithLifecycle()
             NotesAppTheme {
                 NavigationRoot(
-                    viewModel = viewModel
+                    notesState = state,
+                    onEvent = viewModel::onEvent,
+                    analytics = analytics
                 )
             }
         }
@@ -65,13 +75,14 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun NavigationRoot(
-    viewModel: MainViewModel,
+    notesState: NotesListState,
+    onEvent: (MainIntent) -> Unit,
+    analytics: FirebaseAnalytics,
     modifier: Modifier = Modifier
 ) {
     val backStack = rememberNavBackStack(Route.NotesList)
-    val state by viewModel.notesListState.collectAsStateWithLifecycle()
-
     val snackBarHostState = remember { SnackbarHostState() }
+    val state by rememberUpdatedState(notesState)
 
     LaunchedEffect(state.error) {
         state.error?.let { errorMessage ->
@@ -105,7 +116,7 @@ fun NavigationRoot(
                         NavEntry(key) {
                             CreateNoteScreen(
                                 onSave = { title, content ->
-                                    viewModel.onEvent(MainIntent.CreateNote(title, content))
+                                    onEvent(MainIntent.CreateNote(title, content))
                                     backStack.pop()
                                 }
                             )
@@ -113,11 +124,14 @@ fun NavigationRoot(
                     }
                     is Route.NoteDetail -> {
                         NavEntry(key) {
+                            LaunchedEffect(Unit) {
+                                analytics.logEvent(VIEW_NOTE_ANALYTICS, null)
+                            }
                             NoteDetailScreen(
                                 note = key.note,
                                 onEditClick = { backStack.add(Route.EditNote(key.note)) },
                                 onDeleteClick = {
-                                    viewModel.onEvent(MainIntent.DeleteNote(key.note.id))
+                                    onEvent(MainIntent.DeleteNote(key.note.id))
                                     backStack.pop()
                                 }
                             )
@@ -128,7 +142,7 @@ fun NavigationRoot(
                             EditNoteScreen(
                                 note = key.note,
                                 onSave = { updatedContent ->
-                                    viewModel.onEvent(
+                                    onEvent(
                                         MainIntent.UpdateNote(
                                             id = key.note.id,
                                             content = updatedContent
@@ -144,7 +158,6 @@ fun NavigationRoot(
                 }
             }
         )
-
     }
 }
 
